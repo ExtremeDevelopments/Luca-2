@@ -7,19 +7,27 @@ class Ban extends Command {
    * @param {Message} message
    * @param {string[]} args
    */
-  run(message, args) {
-    const member = message.mentions.members.first() || message.guild.members.cache.get(args[0]);
+  async run(message, args) {
+    const member = message.guild.members.cache.get((args[0] || '').replace(/[<@!>]/g, ''))
 
     if (member) {
-      if (!member.bannable) return message.channel.send(new MessageEmbed().setDescription(`:tickNo: I cannot ban this member.`).setColor(`GREY`));
+      if (!member.bannable) return message.channel.send(this.embeds.error(`<:564790211561652237:tickNo> I cannot ban this member.`));
       try {
-        const channel = await this.client.db.getLogChannel(this.client, message.id)
-        channel.send(this.embeds.mute(message, member, message.member))
+        
+        let caseNum = await this.client.db.getCaseCount(message.guild.id) + 1
+        let reason = `Moderator: please do \`-reason ${caseNum}\``;
+        if (args.length >= 2) reason = args.slice(2).join(` `);
+        
+        const channel = await this.client.db.getLogChannel(this.client, message.guild.id);
+        if (channel) channel.send(await this.embeds.ban(message, member, message.member, reason));
+     
+        this.client.db.createLog(member, message.member, message.guild, reason, 1, 'BAN')
       } catch (err) {
-
+        console.log(err)
+        message.channel.send(this.embeds.error('<:tickNo:821117686905438209> A error occured...'))
       }
     } else {
-      return message.channel.send(new MessageEmbed().setDescription(`:tickNo: Uhm... Could you try again? I didn't get who I need to ban.`).setColor(`GREY`)); //Fix tickno before release
+      return message.channel.send(this.embeds.error(`<:tickNo:821117686905438209> Uhm... Could you try again? I didn't get who I need to ban.`)); //Fix tickno before release
     }
   }
 

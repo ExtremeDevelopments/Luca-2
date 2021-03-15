@@ -1,7 +1,9 @@
+const EmbedHandler = require("../handlers/EmbedHandler");
+
 class Command {
   constructor(client) {
     this.client = client;
-    this.embeds = new EmbedHandler(this)
+    this.embeds = new EmbedHandler(this.client)
     if (this.constructor === Command) throw new Error(`Command Handler started Command class directly.`);
   }
 

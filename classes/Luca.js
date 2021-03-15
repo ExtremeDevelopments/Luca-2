@@ -15,7 +15,6 @@ class Luca extends Client {
   constructor(token, options) {
     super(options);
     this.token = token;
-    console.log('use discord-rose')
   }
 
   /**
@@ -24,7 +23,7 @@ class Luca extends Client {
   startup() {
     // Handlers????
     this.db = new DatabaseHandler(this);
-    this.commands = new CommandHandler(this);
+    this.commandHandler = new CommandHandler(this);
 
     // Login yea
     this.login(this.token)
