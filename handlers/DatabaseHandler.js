@@ -1,6 +1,6 @@
 const config = require(`../config.json`)
 const mongoose = require("mongoose");
-const { Channel, GuildMember, Guild } = require("discord.js");
+const { Channel, GuildMember, Guild, Message } = require("discord.js");
 const Luca = require("../classes/Luca");
 
 class DatabaseHandler {
@@ -13,7 +13,8 @@ class DatabaseHandler {
         case: { type: Number, required: true }, //Case ID
         type: { type: String, required: true }, // ['BAN', 'UNBAN', 'KICK', 'MUTE', 'UNMUTE']
         modID: { type: String },
-        reason: { type: String }
+        reason: { type: String },
+        messageID: { type: String }
       }),
 
       starboard: new mongoose.Schema({
@@ -34,7 +35,8 @@ class DatabaseHandler {
           channel: { type: String, default: null }
         },
         moderation: {
-          log_channel: { type: String, default: null }
+          log_channel: { type: String, default: null },
+          mute_role: { type: String, default: null }
         },
         toggles: {
           bans: { type: Boolean, default: true },
@@ -58,20 +60,17 @@ class DatabaseHandler {
       user_config: mongoose.model('users.config', this.schemas.user_config)
     }
   }
-
   async init() {
     await mongoose.connect(config.mongoDB, {
       useNewUrlParser: true,
       useUnifiedTopology: true,
     });
   }
-
   /**
    * 
    * @param {string[]} caseID Options to delete log
    */
   deleteLog(caseID) {
-
   }
   /**
    * 
@@ -79,34 +78,40 @@ class DatabaseHandler {
    * @param {GuildMember} moderation 
    * @param {Guild} guild
    * @param {string} reason 
+   * @param {number} caseNum
+   * @param {string} modtype
+   * @param {Message} message
    */
-  createLog(member, moderator, guild, reason, caseNum, modtype) {
+  createLog(member, moderator, guild, reason, caseNum, modtype, message) {
     const schema = new this.models.moderation({
       guildID: guild.id,
       userID: member.id,
       modID: moderator.id || null,
       case: caseNum,
       type: modtype,
-      reason: reason
+      reason: reason,
+      messageID: message.id || null
     })
     schema.save()
     return schema;
   }
-
   /**
    * Get the guild from the DB
    * @param {string} gid the guild id
    */
   async getGuild(gid) {
-    if(!gid) throw new Error(`Must include ID`)
+    if (!gid) throw new Error(`Must include ID`)
     const conf = await this.models.guild_config.findOne({ id: gid })
-    if (conf.id === gid) {
+    if (conf !== null) {
       return conf;
-    } else if(conf === null) {
+    } else if (conf === null) {
       return new this.models.guild_config();
     }
   }
-
+  async getModLog(gid, caseid) {
+    const data = await this.models.moderation.findOne({ guildID: gid, case: caseid });
+    return data;
+  }
   /**
    * Get the guild prefix
    * @param {string} id the guild's ID
@@ -115,7 +120,6 @@ class DatabaseHandler {
     const data = await this.getGuild(id)
     return data.prefix;
   }
-
   /**
    * Get the guild's options
    * @param {string} id the guild's id
@@ -141,8 +145,8 @@ class DatabaseHandler {
    */
   async getCaseCount(id) {
     const data = await this.models.moderation.find({ guildID: id })
-    if(!data) return 1;
-    if(data) return data.length;
+    if (!data) return 1;
+    if (data) return data.length;
   }
   /**
    * 
@@ -156,7 +160,15 @@ class DatabaseHandler {
     data.save();
     return data;
   }
-
+  /**
+   * Get Mute Role
+   * @param {Guild} guild 
+   * @param {string} id 
+   */
+  async getMuteRole(client, guild) {
+    const data = this.getGuild(guild.id)
+    return guild.roles.cache.get(data.moderation.mute_role)
+  }
 }
 
 module.exports = DatabaseHandler;

@@ -1,8 +1,8 @@
 const { Message, MessageEmbed } = require("discord.js");
 const { readdirSync } = require("fs");
-const { resolve, join } = require('path')
-
+const { resolve, join } = require('path');
 const Command = require("../classes/Command");
+
 const Luca = require("../classes/Luca");
 
 class CommandHandler {
@@ -26,7 +26,7 @@ class CommandHandler {
     if (this.built) return console.log(`Command handler already built`);
     const folders = readdirSync(resolve(__dirname, '../commands'), { withFileTypes: true })
     for (const folder of folders) {
-      const files = readdirSync(resolve(__dirname, '../commands', folder.name), { withFileTypes: true})
+      const files = readdirSync(resolve(__dirname, '../commands', folder.name), { withFileTypes: true })
       for (const file of files) {
         const command = new (require(resolve(__dirname, '../commands', folder.name, file.name)))(this.client);
         this.commands.set(command.name, command)
@@ -37,14 +37,23 @@ class CommandHandler {
     }
     console.log(`Loaded ${this.commands.size} commands`)
     this.built = true;
+    this.lastBuild = new Date();
   }
-  
+
   /**
    * Rebuild?
    */
   rebuild() {
     this.built = false;
     this.build();
+  }
+  get status() {
+    return {
+      commandCount: this.commands.size,
+      aliasCount: this.aliases.size,
+      status: this.built,
+      lastBuild: this.lastBuild.toLocaleString()
+    }
   }
 
   /**
@@ -54,7 +63,12 @@ class CommandHandler {
   get(command) {
     return this.commands.get(command) || this.aliases.get(command);
   }
-
+  get showCommands() {
+    return Array.from(this.commands).map(([K, V]) => K)
+  }
+  get showAliases() {
+    return Array.from(this.aliases).map(([K, V]) => K)
+  }
   /**
    * check the permsadjwijd
    * @param {Message} message message
@@ -74,7 +88,18 @@ class CommandHandler {
     // TODO: channel permissions
     return command.botPermissions.every(perm => message.guild.me.hasPermission(perm))
   }
-
+  /**
+   * Check owner perms
+   * @param {Message} message Message
+   * @param {Command} command Command
+   */
+  checkOwner(message, command) {
+    return ['277183033344524288', '300438546236571658'].includes(message.author.id)
+  }
+  /**
+   * 
+   * @param {Message} msg Message
+   */
   async exec(msg) {
     if (msg.author.bot) return;
     const prefix = await this.client.db.getPrefix(msg.guild.id)
@@ -85,14 +110,20 @@ class CommandHandler {
       const command = this.get(cmd)
       if (!command) return;
       if (command.permissions && !this.checkPerms(msg, command)) {
-        if ((await this.client.db.getOptions()).no_permissions) {
+        if ((await this.client.db.getOptions(msg.guild.id)).no_permissions) {
+          let perms = '';
+          for(const p of command.permissions) {
+            const lower = p.toLowerCase()
+            perms += `\`${p.charAt(0).toUpperCase() + lower.slice(1)}\``
+          }
           const embed = new MessageEmbed()
-            .setAuthor('Missing Permissions')
-            .setTitle(`Missing Permissions: ${command.permissions.join(', ')}`)
+            .setAuthor('| Missing Permissions', msg.author.displayAvatarURL({ dynamic: true }))
+            .setDescription(`**Required:**\n\`${perms}\``)
           msg.channel.send(embed)
         }
         return;
       };
+      if (command.owner && !this.checkOwner(msg, command)) return;
 
       return await command.run(msg, args);
     }

@@ -20,7 +20,7 @@ class EmbedHandler {
     .setTitle(`Ban | Case #${caseNum}`)
     .addFields(
       { name: "User", value: member.user.tag + ` (${member})`, inline: true},
-      { name: "Moderator", value: moderator.user.tag },
+      { name: "Moderator", value: moderator.user.tag, inline: true},
       { name: "Reason", value: reason }
     )
     .setColor(`RED`)
@@ -35,6 +35,25 @@ class EmbedHandler {
     const embed = new MessageEmbed()
     .setDescription(reason)
     .setColor(`#36393f`)
+    return embed;
+  }
+  /**
+   * Mute embed
+   * @param {Message} message Message object
+   * @param {GuildMember} member Member being banned
+   * @param {GuildMember} moderator Moderator
+   */
+   async mute(message, member, moderator, reason) {
+    const caseNum = await this.client.db.getCaseCount(message.guild.id) + 1
+    const embed = new MessageEmbed()
+    .setTitle(`Mute | Case #${caseNum}`)
+    .addFields(
+      { name: "User", value: member.user.tag + ` (${member})`, inline: true},
+      { name: "Moderator", value: moderator.user.tag, inline: true},
+      { name: "Reason", value: reason }
+    )
+    .setColor(`RED`)
+    .setTimestamp();
     return embed;
   }
 }

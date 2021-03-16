@@ -11,7 +11,8 @@ class Ban extends Command {
     const member = message.guild.members.cache.get((args[0] || '').replace(/[<@!>]/g, ''))
 
     if (member) {
-      if (!member.bannable) return message.channel.send(this.embeds.error(`<:564790211561652237:tickNo> I cannot ban this member.`));
+      if (!member.bannable) return message.channel.send(this.embeds.error(`<:tickNo:821117686905438209> I cannot ban this member.`));
+      if(member.roles.highest < message.member.roles.highest) return message.channel.send(this.embeds.error(`<:tickNo:821117686905438209> You cannot do this.`));
       try {
         
         let caseNum = await this.client.db.getCaseCount(message.guild.id) + 1
@@ -19,9 +20,11 @@ class Ban extends Command {
         if (args.length >= 2) reason = args.slice(2).join(` `);
         
         const channel = await this.client.db.getLogChannel(this.client, message.guild.id);
-        if (channel) channel.send(await this.embeds.ban(message, member, message.member, reason));
-     
-        this.client.db.createLog(member, message.member, message.guild, reason, 1, 'BAN')
+        let msg;
+        if (channel) msg = await channel.send(await this.embeds.ban(message, member, message.member, reason));
+        member.ban()
+        this.client.db.createLog(member, message.member, message.guild, reason, caseNum, 'BAN', msg)
+        message.channel.send(new MessageEmbed().setDescription(`<:banHammer:821162351507669043> banned ${member.user.tag} (${member})`));
       } catch (err) {
         console.log(err)
         message.channel.send(this.embeds.error('<:tickNo:821117686905438209> A error occured...'))

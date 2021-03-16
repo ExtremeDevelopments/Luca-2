@@ -46,6 +46,7 @@ class EventHandler {
     }
 
     this.built = true; //Built is true in case of rebuild.
+    this.lastBuild = new Date();
     console.log(`👂 All events loaded.`); //Complete
     return this; //Return
   }
@@ -56,6 +57,13 @@ class EventHandler {
   rebuild() {
     this.built = false;
     this.build();
+  }
+  get status() {
+    return {
+      eventCount: this.events.size,
+      status: this.built,
+      lastBuild: this.lastBuild.toLocaleString()
+    }
   }
 }
 module.exports = EventHandler;
