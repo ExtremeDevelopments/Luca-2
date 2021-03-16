@@ -114,7 +114,8 @@ class CommandHandler {
           let perms = '';
           for(const p of command.permissions) {
             const lower = p.toLowerCase()
-            perms += `\`${p.charAt(0).toUpperCase() + lower.slice(1)}\``
+            let nowreplace = p.charAt(0).toUpperCase() + lower.slice(1)
+            perms += `\`${nowreplace.replace(/_/g, " ")}\``
           }
           const embed = new MessageEmbed()
             .setAuthor('| Missing Permissions', msg.author.displayAvatarURL({ dynamic: true }))
