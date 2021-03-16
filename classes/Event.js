@@ -1,4 +1,4 @@
-const EventEmitter = require("node:events");
+const EventEmitter = require("events");
 const Luca = require("./Luca");
 
 class Event extends EventEmitter {

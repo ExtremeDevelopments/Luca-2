@@ -21,6 +21,7 @@ class DatabaseHandler {
         channelID: { type: String, required: true },
         messageID: { type: String, required: true },
         star_count: { type: Number, default: 1 },
+        starMessageID: { type: String, required: true }
       }),
 
       guild_config: new mongoose.Schema({
@@ -168,6 +169,17 @@ class DatabaseHandler {
   async getMuteRole(client, guild) {
     const data = this.getGuild(guild.id)
     return guild.roles.cache.get(data.moderation.mute_role)
+  }
+
+
+  //Starboard database functions
+  async getStarred(mid) {
+    const data = await this.models.starboard.findOne({ messageID: mid })
+    return data;
+  }
+  async getStarConfig(gid) {
+    const data = await this.getGuild(gid)
+    return data.starboard;
   }
 }
 
